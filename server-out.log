@@ -1,0 +1,7 @@
+
+> fit-ai:-ваш-ии-диетолог@0.0.0 server
+> node server/index.js
+
+[dotenv@17.2.3] injecting env (21) from .env.local -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+Server listening on http://localhost:4000
