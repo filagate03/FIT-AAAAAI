@@ -1,0 +1,15 @@
+t=2025-12-30T07:04:55+0300 lvl=info msg="no configuration paths supplied"
+t=2025-12-30T07:04:55+0300 lvl=info msg="using configuration at default config path" path=C:\\Users\\PC\\AppData\\Local/ngrok/ngrok.yml
+t=2025-12-30T07:04:55+0300 lvl=info msg="open config file" path=C:\\Users\\PC\\AppData\\Local\\ngrok\\ngrok.yml err=nil
+t=2025-12-30T07:04:55+0300 lvl=info msg="starting web service" obj=web addr=127.0.0.1:4040 allow_hosts=[]
+t=2025-12-30T07:04:56+0300 lvl=info msg="update available" obj=updater
+t=2025-12-30T07:04:56+0300 lvl=info msg="client session established" obj=tunnels.session
+t=2025-12-30T07:04:56+0300 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2025-12-30T07:04:57+0300 lvl=info msg="started tunnel" obj=tunnels name=command_line addr=http://localhost:5173 url=https://souplike-undepreciated-warren.ngrok-free.dev
+t=2025-12-30T07:05:04+0300 lvl=info msg="received stop request" obj=app stopReq="{err:<nil> restart:false}"
+t=2025-12-30T07:05:04+0300 lvl=info msg="session closing" obj=tunnels.session err=nil
+t=2025-12-30T07:05:04+0300 lvl=info msg="accept failed" obj=tunnels.session obj=csess id=8e4750ea848a err="reconnecting session closed"
+t=2025-12-30T07:05:04+0300 lvl=info msg="failed to accept connection: Listener closed" obj=tunnels.session clientid=4736c709b719b323851dde0456c3171a
+t=2025-12-30T07:05:04+0300 lvl=warn msg="Stopping forwarder" name=command_line acceptErr="failed to accept connection: Listener closed"
+t=2025-12-30T07:05:04+0300 lvl=warn msg="Error restarting forwarder" name=command_line err="failed to start tunnel: session closed"
+t=2025-12-30T07:05:04+0300 lvl=info msg="no more state changes" obj=tunnels.session
