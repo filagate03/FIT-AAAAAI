@@ -1,0 +1,46 @@
+[
+  {
+    "subscriptionKey": "user-test",
+    "tier": "premium",
+    "userId": null,
+    "telegramId": null,
+    "status": "active",
+    "paymentMethodId": null,
+    "pendingPaymentId": null,
+    "nextChargeAt": null,
+    "history": [],
+    "lastPaymentId": "manual-1767073277952",
+    "lastPaymentStatus": "succeeded"
+  },
+  {
+    "subscriptionKey": "user-Пользователь",
+    "tier": "premium",
+    "userId": null,
+    "telegramId": null,
+    "status": "active",
+    "paymentMethodId": null,
+    "pendingPaymentId": null,
+    "nextChargeAt": null,
+    "history": [],
+    "lastPaymentId": "manual-1767073279040",
+    "lastPaymentStatus": "succeeded"
+  },
+  {
+    "subscriptionKey": "tg-742200799",
+    "telegramId": 742200799,
+    "userId": null,
+    "tier": "premium",
+    "status": "active",
+    "isTrial": true,
+    "trialEndsAt": "2026-01-02T05:55:15.181Z",
+    "history": [],
+    "paymentMethodId": null,
+    "pendingPaymentId": null,
+    "lastPaymentId": "manual-1767074360287",
+    "lastPaymentStatus": "succeeded",
+    "nextChargeAt": null,
+    "profile": {
+      "name": "Алексей Хант"
+    }
+  }
+]
