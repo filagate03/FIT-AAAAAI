@@ -1,0 +1,10 @@
+TELEGRAM_WEBAPP_URL отсутствует или не HTTPS. Кнопка открытия WebApp будет скрыта. Установите публичный https-адрес (например, через ngrok) и перезапустите сервер.
+Ошибка создания платежа Error: {
+  "type" : "error",
+  "id" : "019a9249-bac0-7d02-96be-1328f63d596e",
+  "description" : "This store can't make recurring payments. Contact your manager to learn more",
+  "code" : "forbidden"
+}
+    at apiRequest (file:///C:/Users/PC/Desktop/fit-ai2-main/server/yookassa.js:34:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///C:/Users/PC/Desktop/fit-ai2-main/server/index.js:45:25
