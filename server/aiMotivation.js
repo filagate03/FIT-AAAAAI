@@ -1,5 +1,30 @@
 import { generatePersonalizedAdvice } from './personalizedAdvice.js';
 
+const requestGeminiText = async (prompt) => {
+    const url = `${process.env.GEMINI_API_BASE_URL}/v1beta/models/${process.env.GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+        })
+    });
+
+    const rawText = await response.text();
+    if (!response.ok) {
+        throw new Error(`Gemini request failed (${response.status}): ${rawText.slice(0, 200)}`);
+    }
+
+    let data;
+    try {
+        data = JSON.parse(rawText);
+    } catch (error) {
+        throw new Error(`Gemini returned non-JSON response: ${rawText.slice(0, 200)}`);
+    }
+
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+};
+
 // Генератор общих мотивационных сообщений через AI
 export const generateMotivationQuotes = async (count = 30) => {
     const prompt = `Ты мотивационный коуч по фитнесу и питанию. 
@@ -17,16 +42,7 @@ export const generateMotivationQuotes = async (count = 30) => {
 Формат ответа: Каждую цитату с новой строки, БЕЗ нумерации, БЕЗ кавычек.`;
 
     try {
-        const response = await fetch(`${process.env.GEMINI_API_BASE_URL}/v1beta/models/${process.env.GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
-        });
-
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const text = await requestGeminiText(prompt);
 
         if (!text) {
             throw new Error('No content generated');
@@ -69,16 +85,7 @@ export const generateReminderMessages = async (count = 20) => {
 Формат: Каждое напоминание с новой строки, БЕЗ нумерации, БЕЗ кавычек, БЕЗ эмодзи в начале.`;
 
     try {
-        const response = await fetch(`${process.env.GEMINI_API_BASE_URL}/v1beta/models/${process.env.GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
-        });
-
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const text = await requestGeminiText(prompt);
 
         if (!text) {
             throw new Error('No content generated');
@@ -120,16 +127,7 @@ ${gender ? `Пол: ${gender === 'male' ? 'мужчина' : 'женщина'}` 
 Начни сразу с сообщения, без обращения "Привет".`;
 
     try {
-        const response = await fetch(`${process.env.GEMINI_API_BASE_URL}/v1beta/models/${process.env.GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
-        });
-
-        const data = await response.json();
-        const motivation = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const motivation = await requestGeminiText(prompt);
 
         return motivation || null;
     } catch (error) {
