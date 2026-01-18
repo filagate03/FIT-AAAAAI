@@ -114,7 +114,7 @@ echo -e "${YELLOW}🔍 Шаг 6: Проверка конфигурации...${N
 # Проверка переменных окружения
 source .env.production
 
-REQUIRED_VARS=("TRIBUTE_API_KEY" "TRIBUTE_SECRET_KEY" "TELEGRAM_BOT_TOKEN" "SERVER_BASE_URL")
+REQUIRED_VARS=("YOOKASSA_SHOP_ID" "YOOKASSA_SECRET_KEY" "TELEGRAM_BOT_TOKEN" "SERVER_BASE_URL")
 MISSING_VARS=()
 
 for var in "${REQUIRED_VARS[@]}"; do

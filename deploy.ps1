@@ -19,7 +19,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # Сборка фронтенда
 Write-Host "🔨 Сборка фронтенда..." -ForegroundColor Yellow
-npm run build
+npm run build:prod
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Ошибка сборки фронтенда" -ForegroundColor Red
@@ -50,7 +50,7 @@ Write-Host "6. Запустите приложение через панель �
 Write-Host ""
 Write-Host "🔗 После деплоя:" -ForegroundColor Cyan
 Write-Host "   - Обновите TELEGRAM_WEBAPP_URL и PUBLIC_WEBAPP_URL в .env.production на ваш домен"
-Write-Host "   - Настройте вебхук Tribute на https://your-domain.com/api/payments/webhook"
+Write-Host "   - Настройте вебхук YooKassa на https://your-domain.com/api/payments/webhook"
 Write-Host "   - Установите Telegram Web App через @BotFather"
 Write-Host ""
 Write-Host "✅ Подготовка к деплою завершена!" -ForegroundColor Green

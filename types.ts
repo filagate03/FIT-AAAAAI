@@ -78,6 +78,7 @@ export interface Achievement {
 }
 
 export type SubscriptionTier = 'free' | 'pro' | 'premium';
+export type SubscriptionPeriod = '1m' | '3m' | '6m';
 
 export interface SubscriptionState {
     tier: SubscriptionTier;
@@ -92,6 +93,8 @@ export interface AppSettings {
     notificationsEnabled: boolean;
     supportName: string;
     lastMotivationAt?: string;
+    termsAcceptedAt?: string | null;
+    termsAcceptedVersion?: string | null;
 }
 
 export interface BillingState {

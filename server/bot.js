@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getSubscriptionByTelegramId, upsertSubscription } from './storage.js';
-import { createInitialPayment } from './tribute.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,7 +39,7 @@ if (BOT_TOKEN) {
         }
 
         // Маленькие кнопки снизу в одном ряду
-        buttons.push(['💰 Оплатить', '👤 Профиль']);
+        buttons.push(['👤 Профиль', '📄 Политика и соглашение']);
 
         return Markup.keyboard(buttons).resize();
 
@@ -97,6 +96,10 @@ if (BOT_TOKEN) {
         let msg = `👤 *Профиль пользователя*`;
         msg += `\n🆔 ID: \`${telegramId}\``;
         msg += `\n🏷 Подписка: *${(sub?.tier || 'free').toUpperCase()}*`;
+        const validUntil = sub?.trialEndsAt || sub?.nextChargeAt;
+        if (validUntil) {
+            msg += `\n📅 Доступ до: ${new Date(validUntil).toLocaleDateString('ru-RU')}`;
+        }
 
         if (sub?.profile) {
             msg += `\n\n🎯 Цель: ${sub.profile.goalWeightKg} кг`;
@@ -108,36 +111,15 @@ if (BOT_TOKEN) {
         ctx.replyWithMarkdown(msg);
     });
 
-    // Payment Handler
-    botInstance.hears('💰 Оплатить', (ctx) => {
-        ctx.reply('Выберите тариф для активации:', Markup.inlineKeyboard([
-            [Markup.button.callback('PRO', 'pay_pro')],
-            [Markup.button.callback('PREMIUM', 'pay_premium')]
-        ]));
-    });
+    botInstance.hears('📄 Политика и соглашение', async (ctx) => {
+        const baseUrl = WEBAPP_URL || process.env.PUBLIC_WEBAPP_URL || '';
+        const normalizedBase = baseUrl ? baseUrl.replace(/\/$/, '') : 'https://example.com';
+        const privacyUrl = `${normalizedBase}/privacy.html`;
+        const termsUrl = `${normalizedBase}/terms.html`;
 
-    botInstance.action(/pay_(.+)/, async (ctx) => {
-        const tier = ctx.match[1];
-        const telegramId = ctx.from.id;
-        const name = ctx.from.first_name;
-
-        try {
-            await ctx.answerCbQuery('Открываем оплату...');
-            
-            const tributeLinks = {
-                pro: 'https://t.me/tribute/app?startapp=sKuR',
-                premium: 'https://t.me/tribute/app?startapp=sKuA'
-            };
-
-            const link = tributeLinks[tier];
-            
-            await ctx.reply(`Для оплаты ${tier.toUpperCase()} перейдите по ссылке:`, Markup.inlineKeyboard([
-                [Markup.button.url('Оплатить через Telegram', link)]
-            ]));
-        } catch (e) {
-            console.error(e);
-            ctx.reply('Не удалось создать платеж. Попробуйте позже.');
-        }
+        await ctx.replyWithMarkdown(
+            `📄 *Документы*\n\n• [Политика конфиденциальности](${privacyUrl})\n• [Пользовательское соглашение](${termsUrl})`,
+        );
     });
 
     const maskedToken = BOT_TOKEN.substring(0, 10) + '...';
