@@ -5,6 +5,7 @@ import cron from 'node-cron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import { createInitialPayment, getPaymentDetails, createRecurringPayment, PLAN_LABELS } from './yookassa.js';
 import { bot, sendBotMessage } from './bot.js';
 import { readSubscriptions, writeSubscriptions, upsertSubscription } from './storage.js';
@@ -16,6 +17,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const app = express();
+const distPath = path.resolve(process.cwd(), 'dist');
 // TEST: Send all message types immediately
 app.post('/api/test/send-all-messages', async (req, res) => {
     const { telegramId } = req.body;
@@ -65,6 +67,12 @@ const PORT = process.env.SERVER_PORT || 4000;
 app.use(cors());
 app.use(bodyParser.json());
 
+if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+} else {
+    console.warn('[STATIC] dist folder not found. Frontend will not be served.');
+}
+
 const PLAN_TIERS = ['pro', 'premium'];
 const PLAN_PERIODS = ['1m', '3m', '6m'];
 
@@ -97,6 +105,11 @@ app.post('/api/payments/create', async (req, res) => {
         const { tier, returnUrl, userId, telegramId, period } = req.body;
         if (!PLAN_TIERS.includes(tier)) {
             return res.status(400).json({ error: 'Недопустимый тариф' });
+        }
+        if (!process.env.YOOKASSA_SHOP_ID || !process.env.YOOKASSA_SECRET_KEY) {
+            return res.status(400).json({
+                error: 'YooKassa не настроена. Заполните YOOKASSA_SHOP_ID и YOOKASSA_SECRET_KEY в .env.production.',
+            });
         }
         const resolvedPeriod = PLAN_PERIODS.includes(period) ? period : '1m';
         const payment = await createInitialPayment({
@@ -482,6 +495,16 @@ app.post('/api/payments/cancel', async (req, res) => {
 });
 
 startMotivationJob();
+
+app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    if (!fs.existsSync(distPath)) {
+        return res.status(404).json({ error: 'Frontend build not found' });
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);
