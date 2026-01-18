@@ -37,8 +37,12 @@ export const DEFAULT_APP_STATE: AppState = {
     settings: {
         notificationsEnabled: false,
         supportName: 'Команда Fit AI',
+        termsAcceptedAt: null,
+        termsAcceptedVersion: null,
     }
 };
+
+export const TERMS_VERSION = '2025-01-01';
 
 export const ACHIEVEMENTS_LIST: Achievement[] = [
     { 

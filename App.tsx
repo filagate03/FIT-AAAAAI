@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAppContext } from './context/AppContext';
-import { Page, SubscriptionTier } from './types';
+import { Page } from './types';
 
 
 // Page Components
@@ -21,6 +21,7 @@ import ConfirmModal from './components/ConfirmModal';
 import ManualEntryModal from './components/ManualEntryModal';
 import EditProfileModal from './components/EditProfileModal';
 import UpdateWeightModal from './components/UpdateWeightModal';
+import TermsConsentModal from './components/TermsConsentModal';
 
 
 
@@ -77,10 +78,10 @@ const App: React.FC = () => {
             {isManualEntryModalOpen && <ManualEntryModal />}
             {isEditProfileModalOpen && <EditProfileModal />}
             {isUpdateWeightModalOpen && <UpdateWeightModal />}
+            <TermsConsentModal />
             <ToastContainer />
         </div>
     );
 };
 
 export default App;
-
