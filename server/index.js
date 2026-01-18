@@ -5,7 +5,8 @@ import cron from 'node-cron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { createInitialPayment, getPaymentDetails, createRecurringPayment, PLAN_LABELS, cancelSubscription } from './tribute.js';
+import fs from 'fs';
+import { createInitialPayment, getPaymentDetails, createRecurringPayment, PLAN_LABELS } from './yookassa.js';
 import { bot, sendBotMessage } from './bot.js';
 import { readSubscriptions, writeSubscriptions, upsertSubscription } from './storage.js';
 import { startMotivationJob } from './motivation.js';
@@ -16,6 +17,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const app = express();
+const distPath = path.resolve(process.cwd(), 'dist');
 // TEST: Send all message types immediately
 app.post('/api/test/send-all-messages', async (req, res) => {
     const { telegramId } = req.body;
@@ -65,7 +67,14 @@ const PORT = process.env.SERVER_PORT || 4000;
 app.use(cors());
 app.use(bodyParser.json());
 
+if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+} else {
+    console.warn('[STATIC] dist folder not found. Frontend will not be served.');
+}
+
 const PLAN_TIERS = ['pro', 'premium'];
+const PLAN_PERIODS = ['1m', '3m', '6m'];
 
 const resolveKey = (userId, telegramId, paymentId) => {
     if (userId) return `user-${userId}`;
@@ -93,15 +102,22 @@ const notifyPayment = async (subscription, text) => {
 
 app.post('/api/payments/create', async (req, res) => {
     try {
-        const { tier, returnUrl, userId, telegramId } = req.body;
+        const { tier, returnUrl, userId, telegramId, period } = req.body;
         if (!PLAN_TIERS.includes(tier)) {
             return res.status(400).json({ error: 'Недопустимый тариф' });
         }
+        if (!process.env.YOOKASSA_SHOP_ID || !process.env.YOOKASSA_SECRET_KEY) {
+            return res.status(400).json({
+                error: 'YooKassa не настроена. Заполните YOOKASSA_SHOP_ID и YOOKASSA_SECRET_KEY в .env.production.',
+            });
+        }
+        const resolvedPeriod = PLAN_PERIODS.includes(period) ? period : '1m';
         const payment = await createInitialPayment({
             tier,
             returnUrl,
             metadata: {
                 tier,
+                period: resolvedPeriod,
                 userId: userId || '',
                 telegramId: telegramId || '',
             },
@@ -113,7 +129,7 @@ app.post('/api/payments/create', async (req, res) => {
             userId: userId || null,
             telegramId: telegramId || null,
             status: 'pending',
-            tributeSubscriptionId: null,
+            yookassaPaymentMethodId: null,
             pendingPaymentId: payment.id,
             nextChargeAt: null,
             history: [],
@@ -121,7 +137,7 @@ app.post('/api/payments/create', async (req, res) => {
 
         res.json({
             paymentId: payment.id,
-            confirmationUrl: payment.payment_url || payment.confirmation_url,
+            confirmationUrl: payment.confirmation?.confirmation_url || payment.confirmation_url || payment.payment_url,
         });
     } catch (error) {
         console.error('Ошибка создания платежа', error);
@@ -140,9 +156,15 @@ app.get('/api/payments/status/:paymentId', async (req, res) => {
 
 app.post('/api/payments/webhook', async (req, res) => {
     try {
-        const { event, data } = req.body;
+        const payload = req.body || {};
+        const event = payload.event || payload.type;
+        const data = payload.object || payload.data;
 
-        if (event === 'payment.succeeded' || event === 'subscription.created') {
+        if (!event || !data) {
+            return res.status(400).json({ error: 'Invalid webhook payload' });
+        }
+
+        if (event === 'payment.succeeded') {
             const metadata = typeof data.metadata === 'string'
                 ? JSON.parse(data.metadata)
                 : data.metadata || {};
@@ -152,7 +174,8 @@ app.post('/api/payments/webhook', async (req, res) => {
             const userId = metadata?.userId || null;
             const telegramId = metadata?.telegramId ? Number(metadata.telegramId) : null;
             const paymentId = data.id || data.payment_id;
-            const subscriptionId = data.subscription_id;
+            const paymentMethodId = data.payment_method?.id || null;
+            const paymentMethodSaved = Boolean(data.payment_method?.saved);
             const subscriptionKey = resolveKey(userId, telegramId, paymentId);
 
             const periodMonths = {
@@ -169,10 +192,10 @@ app.post('/api/payments/webhook', async (req, res) => {
                 userId,
                 telegramId,
                 status: 'active',
-                tributeSubscriptionId: subscriptionId || null,
+                yookassaPaymentMethodId: paymentMethodSaved ? paymentMethodId : null,
                 pendingPaymentId: null,
                 lastPaymentId: paymentId,
-                lastPaymentStatus: 'succeeded',
+                lastPaymentStatus: data.status || 'succeeded',
                 period,
                 nextChargeAt: nextChargeDate,
             });
@@ -189,7 +212,7 @@ app.post('/api/payments/webhook', async (req, res) => {
             );
         }
 
-        if (event === 'payment.failed') {
+        if (event === 'payment.canceled') {
             const metadata = typeof data.metadata === 'string'
                 ? JSON.parse(data.metadata)
                 : data.metadata || {};
@@ -200,29 +223,8 @@ app.post('/api/payments/webhook', async (req, res) => {
             if (telegramId) {
                 await notifyPayment(
                     { telegramId },
-                    `⚠️ Ошибка оплаты ${PLAN_LABELS[tier]}. Попробуйте снова или обновите данные карты.`,
+                    `⚠️ Оплата ${PLAN_LABELS[tier]} была отменена. Попробуйте снова или используйте другую карту.`,
                 );
-            }
-        }
-
-        if (event === 'subscription.cancelled') {
-            const subscriptionId = data.subscription_id;
-            const subscriptions = await readSubscriptions();
-            const sub = subscriptions.find(s => s.tributeSubscriptionId === subscriptionId);
-
-            if (sub) {
-                await upsertSubscription({
-                    subscriptionKey: sub.subscriptionKey,
-                    status: 'cancelled',
-                    nextChargeAt: null,
-                });
-
-                if (sub.telegramId) {
-                    await notifyPayment(
-                        { telegramId: sub.telegramId },
-                        `📋 Подписка отменена. Доступ сохраняется до конца оплаченного периода.`,
-                    );
-                }
             }
         }
 
@@ -240,7 +242,7 @@ const processRecurringCharges = async () => {
         subscriptions.map(async subscription => {
             if (
                 subscription.status !== 'active' ||
-                !subscription.tributeSubscriptionId ||
+                !subscription.yookassaPaymentMethodId ||
                 !subscription.nextChargeAt ||
                 new Date(subscription.nextChargeAt) > now
             ) {
@@ -256,7 +258,7 @@ const processRecurringCharges = async () => {
 
                 const charge = await createRecurringPayment({
                     tier: subscription.tier,
-                    subscriptionId: subscription.tributeSubscriptionId,
+                    paymentMethodId: subscription.yookassaPaymentMethodId,
                     metadata: {
                         tier: subscription.tier,
                         period: subscription.period || '1m',
@@ -267,7 +269,10 @@ const processRecurringCharges = async () => {
                 });
 
                 subscription.lastPaymentId = charge.id;
-                subscription.nextChargeAt = new Date(Date.now() + periodMonths * 30 * 24 * 60 * 60 * 1000).toISOString();
+                subscription.lastPaymentStatus = charge.status || 'pending';
+                if (charge.status === 'succeeded' || charge.status === 'waiting_for_capture') {
+                    subscription.nextChargeAt = new Date(Date.now() + periodMonths * 30 * 24 * 60 * 60 * 1000).toISOString();
+                }
                 subscription.history = [
                     ...(subscription.history || []),
                     {
@@ -277,18 +282,20 @@ const processRecurringCharges = async () => {
                     },
                 ];
 
-                const periodText = {
-                    '1m': '1 месяц',
-                    '3m': '3 месяца',
-                    '6m': '6 месяцев',
-                }[subscription.period] || '1 месяц';
+                if (charge.status === 'succeeded') {
+                    const periodText = {
+                        '1m': '1 месяц',
+                        '3m': '3 месяца',
+                        '6m': '6 месяцев',
+                    }[subscription.period] || '1 месяц';
 
-                await notifyPayment(
-                    subscription,
-                    `🔁 Автопродление ${PLAN_LABELS[subscription.tier]} на ${periodText} прошло успешно. Следующее списание: ${new Date(
-                        subscription.nextChargeAt,
-                    ).toLocaleDateString('ru-RU')}.`,
-                );
+                    await notifyPayment(
+                        subscription,
+                        `🔁 Автопродление ${PLAN_LABELS[subscription.tier]} на ${periodText} прошло успешно. Следующее списание: ${new Date(
+                            subscription.nextChargeAt,
+                        ).toLocaleDateString('ru-RU')}.`,
+                    );
+                }
             } catch (error) {
                 subscription.lastPaymentStatus = 'failed';
                 console.error('Ошибка автосписания', error);
@@ -394,7 +401,7 @@ app.post('/api/admin/subscriptions/set-tier', async (req, res) => {
                 isTrial: existing.isTrial,
                 trialEndsAt: existing.trialEndsAt,
                 history: existing.history || [],
-                tributeSubscriptionId: existing.tributeSubscriptionId,
+                yookassaPaymentMethodId: existing.yookassaPaymentMethodId,
                 pendingPaymentId: existing.pendingPaymentId,
                 nextChargeAt: existing.nextChargeAt
             })
@@ -467,14 +474,6 @@ app.post('/api/payments/cancel', async (req, res) => {
             return res.status(404).json({ error: 'Подписка не найдена' });
         }
 
-        if (subscription.tributeSubscriptionId) {
-            try {
-                await cancelSubscription(subscription.tributeSubscriptionId);
-            } catch (error) {
-                console.warn('Failed to cancel Tribute subscription:', error);
-            }
-        }
-
         await upsertSubscription({
             subscriptionKey,
             status: 'cancelled',
@@ -496,6 +495,16 @@ app.post('/api/payments/cancel', async (req, res) => {
 });
 
 startMotivationJob();
+
+app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    if (!fs.existsSync(distPath)) {
+        return res.status(404).json({ error: 'Frontend build not found' });
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);

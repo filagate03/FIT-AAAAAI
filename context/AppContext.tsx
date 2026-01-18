@@ -19,9 +19,10 @@ import {
     Profile,
     ChatMessage,
     SubscriptionTier,
+    SubscriptionPeriod,
 } from '../types';
 import { loadState, saveState } from '../services/storageService';
-import { DEFAULT_APP_STATE, ACHIEVEMENTS_LIST } from '../constants';
+import { DEFAULT_APP_STATE, ACHIEVEMENTS_LIST, TERMS_VERSION } from '../constants';
 import { calculateTDEE, calculateMacros, calculateBMR, calculateCalorieGoal } from '../utils/nutritionCalculations';
 import { getCoachResponse, analyzeFoodImage } from '../services/geminiService';
 import { createPayment, getPaymentStatus, cancelSubscription } from '../services/paymentService';
@@ -143,13 +144,14 @@ interface AppContextType {
     isCoachLoading: boolean;
     requestImageAnalysis: (base64Data: string, fullDataUri: string) => Promise<void>;
     upgradeSubscription: (tier: SubscriptionTier) => void;
-    startSubscriptionPayment: (tier: SubscriptionTier) => Promise<void>;
+    startSubscriptionPayment: (tier: SubscriptionTier, period: SubscriptionPeriod) => Promise<void>;
     refreshPaymentStatus: (options?: { silent?: boolean }) => Promise<string | null>;
     isPaymentProcessing: boolean;
     isPaymentVerifying: boolean;
     cancelCurrentSubscription: () => Promise<void>;
     isCancellingSubscription: boolean;
     toggleNotifications: () => void;
+    acceptTerms: () => void;
     handleAdminNav: () => void;
     isAdminPasswordModalOpen: boolean;
     closeAdminPasswordModal: () => void;
@@ -522,6 +524,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }));
     };
 
+    const acceptTerms = () => {
+        setAppState(prev => ({
+            ...prev,
+            settings: {
+                ...prev.settings,
+                termsAcceptedAt: new Date().toISOString(),
+                termsAcceptedVersion: TERMS_VERSION,
+            },
+        }));
+        addToast('Спасибо за согласие с условиями.', 'success');
+    };
+
     const handleAdminNav = () => {
         const count = adminTapCount + 1;
         setAdminTapCount(count);
@@ -582,7 +596,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         [addToast, telegramUser, appState.profile.name],
     );
 
-    const startSubscriptionPayment = async (tier: SubscriptionTier) => {
+    const startSubscriptionPayment = async (tier: SubscriptionTier, period: SubscriptionPeriod) => {
         if (tier === 'free') {
             upgradeSubscription('free');
             return;
@@ -600,7 +614,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setPaymentProcessing(true);
         try {
             const returnUrl = `${typeof window !== 'undefined' ? window.location.origin + window.location.pathname : ''}`;
-            const session = await createPayment(paidTier, returnUrl, telegramUser?.id ?? null, appState.profile.name);
+            const session = await createPayment(
+                paidTier,
+                period,
+                returnUrl,
+                telegramUser?.id ?? null,
+                appState.profile.name,
+            );
             setAppState(prev => ({
                 ...prev,
                 billing: {
@@ -776,6 +796,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         cancelCurrentSubscription,
         isCancellingSubscription,
         toggleNotifications,
+        acceptTerms,
         handleAdminNav,
         isAdminPasswordModalOpen,
         closeAdminPasswordModal,

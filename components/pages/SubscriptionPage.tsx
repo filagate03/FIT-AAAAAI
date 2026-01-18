@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { SubscriptionTier, Page } from '../../types';
-
-type SubscriptionPeriod = '1m' | '3m' | '6m';
+import { SubscriptionTier, Page, SubscriptionPeriod } from '../../types';
 
 interface Plan {
     tier: SubscriptionTier;
@@ -81,35 +79,16 @@ const SubscriptionPage: React.FC = () => {
     const {
         appState,
         setCurrentPage,
+        startSubscriptionPayment,
+        isPaymentProcessing,
     } = useAppContext();
 
     const [selectedPeriod, setSelectedPeriod] = useState<SubscriptionPeriod>('1m');
-    const [selectedTier, setSelectedTier] = useState<SubscriptionTier | null>(null);
 
     const currentTier = appState.subscription.tier;
-    const isPaidTier = currentTier === 'pro' || currentTier === 'premium';
 
-    const handleTributePayment = (tier: SubscriptionTier) => {
-        const tributeLinks: Record<SubscriptionTier, Record<SubscriptionPeriod, string>> = {
-            free: {
-                '1m': '',
-                '3m': '',
-                '6m': '',
-            },
-            pro: {
-                '1m': 'https://t.me/tribute/app?startapp=sKuR',
-                '3m': 'https://t.me/tribute/app?startapp=sKuR-3m',
-                '6m': 'https://t.me/tribute/app?startapp=sKuR-6m',
-            },
-            premium: {
-                '1m': 'https://t.me/tribute/app?startapp=sKuA',
-                '3m': 'https://t.me/tribute/app?startapp=sKuA-3m',
-                '6m': 'https://t.me/tribute/app?startapp=sKuA-6m',
-            },
-        };
-
-        const link = tributeLinks[tier][selectedPeriod];
-        window.open(link, '_blank');
+    const handlePayment = async (tier: SubscriptionTier) => {
+        await startSubscriptionPayment(tier, selectedPeriod);
     };
 
     return (
@@ -141,6 +120,18 @@ const SubscriptionPage: React.FC = () => {
                 </div>
             </div>
 
+            <div className="bg-card border border-border rounded-2xl p-4">
+                <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-primary">verified</span>
+                    <div>
+                        <p className="font-semibold text-foreground">Максимум пользы без риска</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Отменить можно в любой момент — доступ сохранится до конца оплаченного периода.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div className="grid gap-4">
                 {PLAN_CONFIG.map(plan => {
                     const isCurrent = currentTier === plan.tier;
@@ -168,14 +159,15 @@ const SubscriptionPage: React.FC = () => {
                                 ))}
                             </ul>
                             <button
-                                onClick={() => handleTributePayment(plan.tier)}
+                                onClick={() => handlePayment(plan.tier)}
+                                disabled={isPaymentProcessing}
                                 className={`mt-5 w-full py-3 rounded-xl font-semibold flex items-center justify-center transition-colors ${plan.tier === 'premium'
                                     ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                                     : 'bg-foreground text-background hover:bg-foreground/80'
-                                    }`}
+                                    } ${isPaymentProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
                                 <span className="material-symbols-outlined mr-2">payment</span>
-                                Оплатить через Telegram
+                                {isPaymentProcessing ? 'Создаём платёж...' : 'Оплатить через YooKassa'}
                             </button>
                         </div>
                     );

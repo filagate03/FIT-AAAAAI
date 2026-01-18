@@ -1,4 +1,4 @@
-import { SubscriptionTier } from '../types';
+import { SubscriptionPeriod, SubscriptionTier } from '../types';
 
 interface PaymentSession {
     paymentId: string;
@@ -34,12 +34,14 @@ const request = async (path: string, options?: RequestInit) => {
 
 export const createPayment = async (
     tier: SubscriptionTier,
+    period: SubscriptionPeriod,
     returnUrl: string,
     telegramId?: number | null,
     userId?: string | number | null,
 ): Promise<PaymentSession> => {
     const payload = {
         tier,
+        period,
         returnUrl,
         telegramId,
         userId,
