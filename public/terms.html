@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Пользовательское соглашение — Fit AI</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 32px; line-height: 1.6; color: #111; }
+      h1 { margin-bottom: 12px; }
+      h2 { margin-top: 24px; }
+      a { color: #2563eb; }
+    </style>
+  </head>
+  <body>
+    <div id="content"></div>
+    <script>
+      const CONTENT = {
+        title: "Пользовательское соглашение",
+        intro: "Используя Fit AI, вы соглашаетесь соблюдать условия использования сервиса.",
+        sections: [
+          {
+            title: "Условия использования",
+            items: [
+              "Приложение предоставляет рекомендации и аналитику, не являясь медицинским сервисом.",
+              "Пользователь несет ответственность за корректность введенных данных.",
+              "Оплата и подписки регулируются условиями YooKassa."
+            ]
+          },
+          {
+            title: "Отмена подписки",
+            items: [
+              "Подписку можно отменить в любой момент. Доступ сохраняется до конца оплаченного периода."
+            ]
+          }
+        ]
+      };
+
+      const container = document.getElementById("content");
+      const title = document.createElement("h1");
+      title.textContent = CONTENT.title;
+      container.appendChild(title);
+
+      const intro = document.createElement("p");
+      intro.textContent = CONTENT.intro;
+      container.appendChild(intro);
+
+      CONTENT.sections.forEach((section) => {
+        const heading = document.createElement("h2");
+        heading.textContent = section.title;
+        container.appendChild(heading);
+
+        const list = document.createElement("ul");
+        section.items.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          list.appendChild(li);
+        });
+        container.appendChild(list);
+      });
+    </script>
+  </body>
+</html>

@@ -46,11 +46,6 @@ export default defineConfig(({ mode }) => {
       'process.env.GEMINI_API_BASE_URL': JSON.stringify(resolvedBaseUrl),
       'process.env.GEMINI_API_VERSION': JSON.stringify(resolvedApiVersion),
       'process.env.GEMINI_MODEL': JSON.stringify(resolvedModel),
-      'process.env.TRIBUTE_API_KEY': JSON.stringify(env.TRIBUTE_API_KEY || ''),
-      'process.env.TRIBUTE_SECRET_KEY': JSON.stringify(env.TRIBUTE_SECRET_KEY || ''),
-      'process.env.TRIBUTE_BASE_URL': JSON.stringify(env.TRIBUTE_BASE_URL || 'https://api.tributepay.com'),
-      'process.env.TRIBUTE_PRO_LINK': JSON.stringify(env.TRIBUTE_PRO_LINK || 'https://t.me/tribute/app?startapp=sKuR'),
-      'process.env.TRIBUTE_PREMIUM_LINK': JSON.stringify(env.TRIBUTE_PREMIUM_LINK || 'https://t.me/tribute/app?startapp=sKuA'),
       'process.env.GEMINI_USE_PROXY': JSON.stringify(useProxy ? 'true' : 'false'),
       'process.env.GEMINI_PROXY_PATH': JSON.stringify(proxyPath),
       'process.env.ADMIN_PASSWORD': JSON.stringify(env.ADMIN_PASSWORD || 'alex-alex-fitai3'),
@@ -62,8 +57,6 @@ export default defineConfig(({ mode }) => {
         env.TELEGRAM_SUPPORT_URL || env.TELEGRAM_SUPPORT_CHAT_LINK || 'https://t.me/hunt_tg'
       ),
       'process.env.PUBLIC_WEBAPP_URL': JSON.stringify(env.PUBLIC_WEBAPP_URL || ''),
-      'process.env.PRIVACY_POLICY_URL': JSON.stringify(env.PRIVACY_POLICY_URL || ''),
-      'process.env.TERMS_URL': JSON.stringify(env.TERMS_URL || ''),
       'process.env.SUPPORT_DISPLAY_NAME': JSON.stringify(env.SUPPORT_DISPLAY_NAME || 'Команда Fit AI')
     },
     resolve: {
@@ -73,4 +66,3 @@ export default defineConfig(({ mode }) => {
     }
   };
 });
-
